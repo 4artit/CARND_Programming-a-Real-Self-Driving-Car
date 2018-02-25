@@ -36,17 +36,66 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
-        # TODO: Add other member variables you need below
+        # TODO: Add other member variables you need below        
+        self.base_waypoints = None
+        self.base_wp_size = 0
+        self.has_base_wp = False
+        self.is_initialized = False
+        self.current_pos_index = 0
 
         rospy.spin()
 
+
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        # Check has base waypoints and find min distance waypoint
+        if self.has_base_wp is True:
+	    index = self.current_pos_index
+	    diff_x = msg.pose.position.x - self.base_waypoints[index].pose.pose.position.x
+            diff_y = msg.pose.position.y - self.base_waypoints[index].pose.pose.position.y
+            min_dist = diff_x ** 2 + diff_y ** 2
+            waypoint_size = 0
+        # If is not initialized, check all waypoints/ initialized just check in before final_waypoints
+            if self.is_initialized is False:
+                waypoint_size = self.base_wp_size
+                self.is_initialized = True
+            else:
+                waypoint_size = LOOKAHEAD_WPS
+            for i in range(1, waypoint_size):
+                diff_x = msg.pose.position.x - self.base_waypoints[i].pose.pose.position.x
+                diff_y = msg.pose.position.y - self.base_waypoints[i].pose.pose.position.y
+                dist = diff_x ** 2 + diff_y ** 2
+                if dist < min_dist:
+                    min_dist = dist
+                    index = i
+
+        # Check min distance is forward waypoint from car using inner product space
+            if index + 1 == self.base_wp_size:
+                next_index = 0
+            else:
+                next_index = index + 1
+            a_vector_x = self.base_waypoints[next_index].pose.pose.position.x - self.base_waypoints[index].pose.pose.position.x
+            a_vector_y = self.base_waypoints[next_index].pose.pose.position.y - self.base_waypoints[index].pose.pose.position.y
+            b_vector_x = msg.pose.position.x - self.base_waypoints[index].pose.pose.position.x
+            b_vector_y = msg.pose.position.y - self.base_waypoints[index].pose.pose.position.y
+            cos_theta = (a_vector_x * b_vector_x + a_vector_y * b_vector_y) / (math.sqrt(a_vector_x ** 2 + a_vector_y ** 2) * math.sqrt(b_vector_x ** 2 + b_vector_y ** 2))
+            if cos_theta >= 0:
+                index = next_index
+            self.current_pos_index = index
+        # publish final waypoints
+            final_waypoints = Lane()
+            final_waypoints.waypoints = []
+        
+            for i in range(LOOKAHEAD_WPS):
+                final_waypoints.waypoints.append(self.base_waypoints[(index + i)%self.base_wp_size])
+            self.final_waypoints_pub.publish(final_waypoints)
+
 
     def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+	# Save base waypoints and waypoints list size
+        self.base_waypoints = waypoints.waypoints
+        self.base_wp_size = len(waypoints.waypoints)
+        if self.has_base_wp is False:
+            self.has_base_wp = True
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
