@@ -53,12 +53,27 @@ class DBWNode(object):
         self.brake_pub = rospy.Publisher('/vehicle/brake_cmd',
                                          BrakeCmd, queue_size=1)
 
-        # TODO: Create `Controller` object
-        # self.controller = Controller(<Arguments you wish to provide>)
+        # Create `Controller` object
+        self.controller = Controller(wheel_base, steer_ratio, max_lat_accel, max_steer_angle)
 
-        # TODO: Subscribe to all the topics you need to
+        # Subscribe to 3 topics
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.enabled_dbw_cb)
+        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cb)
+
+        rospy.spin()
 
         self.loop()
+
+        #TODO: implement all callback function
+    def velocity_cb(self, msg):
+        pass
+
+    def enabled_dbw_cb(self, msg):
+        pass
+
+    def twist_cb(self, msg):
+        pass
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
