@@ -21,7 +21,7 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 200 # Number of waypoints we will publish. You can change this number
+LOOKAHEAD_WPS = 150 # Number of waypoints we will publish. You can change this number
 
 
 class WaypointUpdater(object):
@@ -42,6 +42,7 @@ class WaypointUpdater(object):
         self.has_base_wp = False
         self.is_initialized = False
         self.current_pos_index = 0
+        self.final_waypoints = Lane()
 
         rospy.spin()
 
@@ -49,8 +50,8 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         # Check has base waypoints and find min distance waypoint
         if self.has_base_wp is True:
-	    index = self.current_pos_index
-	    diff_x = msg.pose.position.x - self.base_waypoints[index].pose.pose.position.x
+            index = self.current_pos_index
+            diff_x = msg.pose.position.x - self.base_waypoints[index].pose.pose.position.x
             diff_y = msg.pose.position.y - self.base_waypoints[index].pose.pose.position.y
             min_dist = diff_x ** 2 + diff_y ** 2
             waypoint_size = 0
@@ -82,12 +83,11 @@ class WaypointUpdater(object):
                 index = next_index
             self.current_pos_index = index
         # publish final waypoints
-            final_waypoints = Lane()
-            final_waypoints.waypoints = []
+            self.final_waypoints.waypoints = []
         
             for i in range(LOOKAHEAD_WPS):
-                final_waypoints.waypoints.append(self.base_waypoints[(index + i)%self.base_wp_size])
-            self.final_waypoints_pub.publish(final_waypoints)
+                self.final_waypoints.waypoints.append(self.base_waypoints[(index + i)%self.base_wp_size])
+            self.final_waypoints_pub.publish(self.final_waypoints)
 
 
     def waypoints_cb(self, waypoints):
