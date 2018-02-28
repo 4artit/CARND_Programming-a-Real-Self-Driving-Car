@@ -13,7 +13,7 @@ class Controller(object):
         self.wheel_radius = args[6]
 
         self.yaw_controller = YawController(args[0], args[1], 0.15, args[2], args[3])
-        self.pid = PID(0.0209, 0.0004, 0.022, -1.0, 0.4)
+        self.pid = PID(0.0198, 0.0002, 0.0064, -1.0, 0.35)
         # tau = 0.01, ts = 50Hz -> 20ms
         self.lowpass_filter = LowPassFilter(0.01, 0.02)
 
